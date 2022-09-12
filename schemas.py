@@ -18,13 +18,14 @@ class ItemBase(BaseModel):
 
 
 class ItemCreate(ItemBase):
-    created_on: datetime.datetime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    updated_on: datetime.datetime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    pass
 
 
 class Item(ItemBase):
     id: int
     owner_id: int
+    created_on: datetime.datetime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    updated_on: datetime.datetime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
     class Config:
         orm_mode = True
@@ -43,6 +44,7 @@ class UserCreate(UserBase):
 class User(UserBase):
     id: int
     is_active: Union[bool, None] = False
+    is_admin: Union[bool, None] = False
     items: List[Item] = []
 
     class Config:
@@ -51,6 +53,7 @@ class User(UserBase):
 
 class UserInDB(User):
     hashed_password: str
+
 
 
 

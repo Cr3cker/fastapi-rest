@@ -13,7 +13,7 @@ class User(Base):
     full_name = Column(String)
     hashed_password = Column(String)
     is_active = Column(Boolean)
-
+    is_admin = Column(Boolean)
     items = relationship("Item", back_populates="owner")
 
 

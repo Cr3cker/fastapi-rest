@@ -4,8 +4,7 @@ from datetime import datetime, timedelta
 import models
 from typing import Union
 from sqlalchemy.orm import Session
-from fastapi import Depends, HTTPException, status
-from utils import get_db
+from fastapi import HTTPException, status
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
@@ -27,7 +26,7 @@ def get_password_hash(password):
     return pwd_context.hash(password)
 
 
-def authenticate_user(password, username, db: Session = Depends(get_db)):
+def authenticate_user(password, username, db: Session):
     user = get_user_by_username(username, db)
     if not user:
         return False
@@ -47,13 +46,13 @@ def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None
     return encoded_jwt
 
 
-def get_user_by_username(username, db: Session = Depends(get_db)):
+def get_user_by_username(username, db: Session):
     username = db.query(models.User).filter(models.User.username == username).first()
     if username:
         return schemas.UserInDB.from_orm(username)
 
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+def get_current_user(db: Session, token: str):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -71,8 +70,6 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     if user is None:
         raise credentials_exception
     return user
-
-
 
 
 
