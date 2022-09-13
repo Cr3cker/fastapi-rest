@@ -14,7 +14,7 @@ class TokenData(BaseModel):
 
 class ItemBase(BaseModel):
     title: str
-    description: Union[str, None] = None
+    description: str
 
 
 class ItemCreate(ItemBase):
@@ -22,8 +22,8 @@ class ItemCreate(ItemBase):
 
 
 class Item(ItemBase):
-    id: int
-    owner_id: int
+    id: str
+    owner_id: str
     updated_on: datetime.datetime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     created_on: datetime.datetime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
@@ -32,9 +32,9 @@ class Item(ItemBase):
 
 
 class UserBase(BaseModel):
-    email: Union[str, None] = None
+    email: str
     username: str
-    full_name: Union[str, None] = None
+    full_name: str
 
 
 class UserCreate(UserBase):
@@ -42,9 +42,9 @@ class UserCreate(UserBase):
 
 
 class User(UserBase):
-    id: int
-    is_active: Union[bool, None] = False
-    is_admin: Union[bool, None] = False
+    id: str
+    is_active: bool = False
+    is_admin: bool = False
     items: List[Item] = []
 
     class Config:
@@ -52,5 +52,5 @@ class User(UserBase):
 
 
 class UserInDB(User):
-    is_superuser: Union[bool, None] = False
+    is_superuser: bool = False
     hashed_password: str

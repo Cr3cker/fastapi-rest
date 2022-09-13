@@ -4,11 +4,8 @@ from fastapi import HTTPException
 from fastapi.encoders import jsonable_encoder
 import models
 import datetime
+import uuid
 import schemas
-
-
-def get_user(db: Session, username: str):
-    return db.query(models.User).filter(models.User.username == username).first()
 
 
 def get_user_by_email(db: Session, email: str):
@@ -22,16 +19,23 @@ def get_users(db: Session, skip: int = 0, limit: int = 100):
     return users
 
 
-def create_user(db: Session, user: schemas.UserCreate):
-    db_user = models.User(
-        email=user.email, hashed_password=security.get_password_hash(user.password),
-        username=user.username, full_name=user.full_name, is_active=False, is_admin=False,
-        is_superuser=False
+def create_user(db: Session, user):
+    db_username = security.get_user_by_username(user.username, db)
+    db_user = get_user_by_email(db, user.email)
+    if db_username:
+        raise HTTPException(status_code=400, detail="Username already registered")
+    if db_user:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    new_dict = user.dict()
+    new_dict["hashed_password"] = new_dict['password'] = security.get_password_hash(user.password)
+    del new_dict['password']
+    user = models.User(
+        **new_dict, id=str(uuid.uuid4()), is_active=False, is_admin=False, is_superuser=False
     )
-    db.add(db_user)
+    db.add(user)
     db.commit()
-    db.refresh(db_user)
-    return db_user
+    db.refresh(user)
+    return user
 
 
 def delete_current_user(db: Session, user_id: int):
@@ -44,7 +48,8 @@ def delete_current_user(db: Session, user_id: int):
 def create_user_item(db: Session, item: schemas.ItemCreate, token: str):
     user = security.get_current_user(db, token)
     db_item = models.Item(
-        **item.dict(), owner_id=user.id, updated_on=datetime.datetime.now(), created_on=datetime.datetime.now()
+        **item.dict(), owner_id=user.id, updated_on=datetime.datetime.now(),
+        created_on=datetime.datetime.now(), id=str(uuid.uuid4())
     )
     db.add(db_item)
     db.commit()
@@ -52,7 +57,7 @@ def create_user_item(db: Session, item: schemas.ItemCreate, token: str):
     return {"message: ": "Item was created successfully"}
 
 
-def delete_item_by_id(item_id: int, db: Session, token: str):
+def delete_item_by_id(item_id: str, db: Session, token: str):
     item = db.query(models.Item).filter(models.Item.id == item_id).first()
     user = security.get_current_user(db, token)
     if item is not None:
@@ -79,7 +84,7 @@ def make_user_active(db: Session, username: str):
     db.refresh(db_user)
 
 
-def update_item(item_id: int, db: Session, token: str, item):
+def update_item(item_id: str, db: Session, token: str, item):
     db_item = db.query(models.Item).filter(models.Item.id == item_id).first()
     user = security.get_current_user(db, token)
     if db_item is not None:
@@ -98,9 +103,6 @@ def update_item(item_id: int, db: Session, token: str, item):
         raise HTTPException(status_code=404, detail="Item not found")
 
 
-
-# TODO: Create a main superuser
-# TODO: Create a function that will allow to change the is_admin state
 # TODO: Create scopes that will allow admins to make whatever they want
 # TODO: Make a dockerfile that will allow to run my app
 # TODO: Read tiangolo's fullstack project code and DJWOMS code

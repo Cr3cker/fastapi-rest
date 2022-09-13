@@ -31,12 +31,6 @@ def read_users_me(token: str = Depends(security.oauth2_scheme), db: Session = De
 
 @app.post("/users/", response_model=schemas.User)
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
-    db_username = security.get_user_by_username(user.username, db)
-    db_user = crud.get_user_by_email(db, user.email)
-    if db_username:
-        raise HTTPException(status_code=400, detail="Username already registered")
-    if db_user:
-        raise HTTPException(status_code=400, detail="Email already registered")
     return crud.create_user(db, user)
 
 
@@ -69,7 +63,7 @@ def read_users(
 
 @app.get("/users/{username}", response_model=schemas.User, response_model_exclude={"id"})
 def read_user(username: str, db: Session = Depends(get_db)):
-    db_user = crud.get_user(db, username=username)
+    db_user = security.get_user_by_username(username, db)
     if db_user is None:
         raise HTTPException(status_code=404, detail="User not found")
     return db_user
@@ -90,19 +84,19 @@ def create_item_for_user(
 
 
 @app.post("/items/delete/{item_id}")
-def delete_item_for_user(item_id: int, db: Session = Depends(get_db), token: str = Depends(security.oauth2_scheme)):
+def delete_item_for_user(item_id: str, db: Session = Depends(get_db), token: str = Depends(security.oauth2_scheme)):
     return crud.delete_item_by_id(item_id, db, token)
 
 
 @app.put("/items/update/{item_id}")
 def update_item_for_user(
-    item: schemas.ItemCreate, item_id: int, db: Session = Depends(get_db), token: str = Depends(security.oauth2_scheme)
+    item: schemas.ItemCreate, item_id: str, db: Session = Depends(get_db), token: str = Depends(security.oauth2_scheme)
 ):
     return crud.update_item(item_id, db, token, item)
 
 
 @app.put("/users/admin/{user_id}")
-def make_user_admin(user_id: int, db: Session = Depends(get_db), token: str = Depends(security.oauth2_scheme)):
+def make_user_admin(user_id: str, db: Session = Depends(get_db), token: str = Depends(security.oauth2_scheme)):
     security.set_superuser(db)
     return security.make_admin(db, token, user_id)
 

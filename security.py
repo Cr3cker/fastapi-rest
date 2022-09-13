@@ -88,7 +88,7 @@ def set_superuser(db: Session):
     db.refresh(db_user)
 
 
-def make_admin(db: Session, token: str, user_id: int):
+def make_admin(db: Session, token: str, user_id: str):
     user_current = get_current_user(db, token)
     db_user = db.query(models.User).filter(models.User.id == user_id).first()
     if db_user and user_current.is_superuser and not db_user.is_admin:

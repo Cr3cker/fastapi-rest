@@ -7,7 +7,7 @@ from db import Base
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(String, primary_key=True, index=True)
     email = Column(String, unique=True)
     username = Column(String, unique=True, index=True)
     full_name = Column(String)
@@ -21,11 +21,11 @@ class User(Base):
 class Item(Base):
     __tablename__ = "items"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(String, primary_key=True, index=True)
     title = Column(String, index=True)
     description = Column(String, index=True)
     created_on = Column(DateTime)
     updated_on = Column(DateTime)
-    owner_id = Column(Integer, ForeignKey("users.id"))
+    owner_id = Column(String, ForeignKey("users.id"))
 
     owner = relationship("User", back_populates="items")
