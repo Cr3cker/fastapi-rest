@@ -75,7 +75,7 @@ def read_user(username: str, db: Session = Depends(get_db)):
     return db_user
 
 
-@app.post("/users/{user_id}/", response_model=schemas.User)
+@app.post("/users/{user_id}", response_model=schemas.User)
 def delete_user(db: Session = Depends(get_db), token: str = Depends(security.oauth2_scheme)):
     user = security.get_current_user(db, token)
     db_user = crud.delete_current_user(db, user.id)
@@ -86,10 +86,23 @@ def delete_user(db: Session = Depends(get_db), token: str = Depends(security.oau
 def create_item_for_user(
     item: schemas.ItemCreate, db: Session = Depends(get_db), token: str = Depends(security.oauth2_scheme)
 ):
-    user = security.get_current_user(db, token)
-    return crud.create_user_item(db, item, user.id)
+    return crud.create_user_item(db, item, token)
 
 
-@app.post("/items/{item_id}")
+@app.post("/items/delete/{item_id}")
 def delete_item_for_user(item_id: int, db: Session = Depends(get_db), token: str = Depends(security.oauth2_scheme)):
     return crud.delete_item_by_id(item_id, db, token)
+
+
+@app.put("/items/update/{item_id}")
+def update_item_for_user(
+    item: schemas.ItemCreate, item_id: int, db: Session = Depends(get_db), token: str = Depends(security.oauth2_scheme)
+):
+    return crud.update_item(item_id, db, token, item)
+
+
+@app.put("/users/admin/{user_id}")
+def make_user_admin(user_id: int, db: Session = Depends(get_db), token: str = Depends(security.oauth2_scheme)):
+    security.set_superuser(db)
+    return security.make_admin(db, token, user_id)
+

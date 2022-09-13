@@ -24,8 +24,8 @@ class ItemCreate(ItemBase):
 class Item(ItemBase):
     id: int
     owner_id: int
-    created_on: datetime.datetime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     updated_on: datetime.datetime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    created_on: datetime.datetime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
     class Config:
         orm_mode = True
@@ -52,4 +52,5 @@ class User(UserBase):
 
 
 class UserInDB(User):
+    is_superuser: Union[bool, None] = False
     hashed_password: str

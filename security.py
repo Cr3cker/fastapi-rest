@@ -10,6 +10,7 @@ from passlib.context import CryptContext
 
 
 SECRET_KEY = "b47e7c443994e10a789ee0fbd2e60665d2d788acc93d6beafe32819539f23732"
+SUPERUSER_HASH = "$2b$12$wcNtWizHOP1pDVilZMDXm.M7/fpGrFIaQ/CCIoDMvECnLmlsXXCz2"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
@@ -70,3 +71,32 @@ def get_current_user(db: Session, token: str):
     if user is None:
         raise credentials_exception
     return user
+
+
+def set_superuser(db: Session):
+    db_user = db.query(models.User).filter(
+        models.User.username == 'superuser', models.User.hashed_password == SUPERUSER_HASH).first()
+    if db_user is None:
+        return None
+    for var, value in vars(db_user).items():
+        setattr(db_user, "is_superuser", True) if value else None
+        setattr(db_user, "is_admin", True) if value else None
+
+    db_user.is_superuser = True
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+
+
+def make_admin(db: Session, token: str, user_id: int):
+    user_current = get_current_user(db, token)
+    db_user = db.query(models.User).filter(models.User.id == user_id).first()
+    if db_user and user_current.is_superuser and not db_user.is_admin:
+        db_user.is_admin = True
+        db.add(db_user)
+        db.commit()
+        db.refresh(db_user)
+        raise HTTPException(status_code=200, detail=f"User {user_id} became admin!")
+    else:
+        raise HTTPException(status_code=404, detail="User is admin or you have no permission")
+

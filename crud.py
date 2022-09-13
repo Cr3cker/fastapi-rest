@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 import security
 from fastapi import HTTPException
+from fastapi.encoders import jsonable_encoder
 import models
 import datetime
 import schemas
@@ -24,7 +25,8 @@ def get_users(db: Session, skip: int = 0, limit: int = 100):
 def create_user(db: Session, user: schemas.UserCreate):
     db_user = models.User(
         email=user.email, hashed_password=security.get_password_hash(user.password),
-        username=user.username, full_name=user.full_name, is_active=False, is_admin=False
+        username=user.username, full_name=user.full_name, is_active=False, is_admin=False,
+        is_superuser=False
     )
     db.add(db_user)
     db.commit()
@@ -39,9 +41,10 @@ def delete_current_user(db: Session, user_id: int):
     return db_user
 
 
-def create_user_item(db: Session, item: schemas.ItemCreate, user_id):
+def create_user_item(db: Session, item: schemas.ItemCreate, token: str):
+    user = security.get_current_user(db, token)
     db_item = models.Item(
-        **item.dict(), owner_id=user_id, created_on=datetime.datetime.now(), updated_on=datetime.datetime.now()
+        **item.dict(), owner_id=user.id, updated_on=datetime.datetime.now(), created_on=datetime.datetime.now()
     )
     db.add(db_item)
     db.commit()
@@ -75,10 +78,30 @@ def make_user_active(db: Session, username: str):
     db.commit()
     db.refresh(db_user)
 
+
+def update_item(item_id: int, db: Session, token: str, item):
+    db_item = db.query(models.Item).filter(models.Item.id == item_id).first()
+    user = security.get_current_user(db, token)
+    if db_item is not None:
+        if db_item.owner_id == user.id:
+            update_item_encoded = jsonable_encoder(item)
+            db_item.title = update_item_encoded['title']
+            db_item.description = update_item_encoded['description']
+            db_item.updated_on = datetime.datetime.now()
+            db.add(db_item)
+            db.commit()
+            db.refresh(db_item)
+            raise HTTPException(status_code=200, detail="Item was updated successfully")
+        else:
+            raise HTTPException(status_code=404, detail="You can only update items you own")
+    else:
+        raise HTTPException(status_code=404, detail="Item not found")
+
+
+
 # TODO: Create a main superuser
 # TODO: Create a function that will allow to change the is_admin state
 # TODO: Create scopes that will allow admins to make whatever they want
-# TODO: Create a function that will allow to update items time
 # TODO: Make a dockerfile that will allow to run my app
 # TODO: Read tiangolo's fullstack project code and DJWOMS code
 # TODO: Read some more FastAPI documentation
