@@ -66,12 +66,7 @@ def get_current_user(db: Session, token: str):
         token_data = schemas.TokenData(username=username)
     except JWTError:
         raise credentials_exception
-    user = get_user_by_username(username=token_data.username, db=db)
+    user = get_user_by_username(token_data.username, db)
     if user is None:
         raise credentials_exception
     return user
-
-
-
-
-

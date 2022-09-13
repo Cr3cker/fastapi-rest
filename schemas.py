@@ -53,7 +53,3 @@ class User(UserBase):
 
 class UserInDB(User):
     hashed_password: str
-
-
-
-
